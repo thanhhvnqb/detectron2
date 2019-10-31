@@ -1,0 +1,15 @@
+_BASE_: "Base-PoseNet-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  BACKBONE:
+    NAME: "build_fcos_resnet_fpn_backbone"
+  RESNETS:
+    OUT_FEATURES: ["res3", "res4", "res5"]
+  FPN:
+    IN_FEATURES: ["res3", "res4", "res5"]
+  RPN:
+    IN_FEATURES: ["p3", "p4", "p5", "p6", "p7"]
+  ROI_HEADS:
+    IN_FEATURES: ["p3", "p4", "p5", "p6", "p7"]
+  ROI_KEYPOINT_HEAD:
+    NAME: "KRCNNConvDeconvUpsampleHead"
