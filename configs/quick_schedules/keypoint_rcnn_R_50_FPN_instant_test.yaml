@@ -2,10 +2,6 @@ _BASE_: "../Base-RCNN-FPN.yaml"
 MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   KEYPOINT_ON: True
-  RPN:
-    BATCH_SIZE_PER_IMAGE: 64
-  ROI_KEYPOINT_HEAD:
-    CONV_DIMS: [128, 128, 128, 128]
 DATASETS:
   TRAIN: ("keypoints_coco_2017_val_100",)
   TEST: ("keypoints_coco_2017_val_100",)
