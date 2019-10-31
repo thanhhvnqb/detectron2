@@ -704,6 +704,8 @@ class StandardROIHeads(ROIHeads):
             )
             return {"loss_keypoint": loss * self.keypoint_loss_weight}
         else:
+            logger = logging.getLogger(__name__)
+            logger.info(instances)
             pred_boxes = [x.pred_boxes for x in instances]
             keypoint_features = self.keypoint_pooler(features, pred_boxes)
             keypoint_logits = self.keypoint_head(keypoint_features)
