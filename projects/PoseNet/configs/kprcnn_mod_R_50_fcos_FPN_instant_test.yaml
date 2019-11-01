@@ -12,10 +12,6 @@ MODEL:
     IN_FEATURES: ["p3", "p4", "p5", "p6", "p7"]
   ROI_HEADS:
     IN_FEATURES: ["p2", "p3", "p4", "p5"]
-  ROI_BOX_HEAD:
-    NAME: "FastRCNNConvFCHead"
-    NUM_FC: 2
-    POOLER_RESOLUTION: 7
   ROI_KEYPOINT_HEAD:
     NAME: "KRCNNConvDeconvUpsampleHead"
     CONV_DIMS: [128, 128, 128, 128]
@@ -24,11 +20,11 @@ DATASETS:
   TEST: ("keypoints_coco_2017_val_100",)
 SOLVER:
   BASE_LR: 0.005
-  STEPS: (6000, 8000,)
-  MAX_ITER: 9000
+  STEPS: (30,)
+  MAX_ITER: 40
   IMS_PER_BATCH: 2
-  WARMUP_FACTOR: 0.01
-  WARMUP_ITERS: 100
+  WARMUP_FACTOR: 0.1
+  WARMUP_ITERS: 10
 DATALOADER:
   NUM_WORKERS: 2
 INPUT:

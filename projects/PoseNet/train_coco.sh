@@ -6,22 +6,28 @@
 # ln -s $Dataset/test2017 datasets/coco/test2017
 # ln -s $Dataset/val2017 datasets/coco/val2017
 
+netname='kprcnn_fcos'
 # netname='kprcnn_mod'
-# netname='kprcnn_fcos'
-netname='posenet'
+# netname='kprcnn_mod_fcos'
+# netname='posenet'
 run_date=$(date +%Y%m%d)
 # run_date=201910930
+# test_conf=instant_test
+test_conf=1x
 outdir=../../out/$netname/$run_date/
 outlog=../../out/run_${run_date}_$netname.log
-if [ "$netname" = 'kprcnn_mod' ];
+if [ "$netname" = 'kprcnn_fcos' ];
 then
-    configfile=configs/kprcnn_R_50_FPN.yaml
-elif [ "$netname" = 'kprcnn_fcos' ];
+    configfile=configs/kprcnn_R_50_fcos_FPN_$test_conf.yaml
+elif [ "$netname" = 'kprcnn_mod' ];
 then
-    configfile=configs/kprcnn_R_50_fcos_FPN.yaml
+    configfile=configs/kprcnn_mod_R_50_FPN_$test_conf.yaml
+elif [ "$netname" = 'kprcnn_mod_fcos' ];
+then
+    configfile=configs/kprcnn_mod_R_50_fcos_FPN_$test_conf.yaml
 elif [ "$netname" = 'posenet' ];
 then
-    configfile=configs/posenet_R_50_FPN.yaml
+    configfile=configs/posenet_R_50_FPN_$test_conf.yaml
 fi
 
 if test -f "$outlog"; then

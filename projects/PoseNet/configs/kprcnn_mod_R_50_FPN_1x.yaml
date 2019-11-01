@@ -3,3 +3,4 @@ MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   ROI_KEYPOINT_HEAD:
     NAME: "KRCNNConvDeconvUpsampleHead"
+    CONV_DIMS: [512, 512, 512, 512, 512, 512, 512, 512]
