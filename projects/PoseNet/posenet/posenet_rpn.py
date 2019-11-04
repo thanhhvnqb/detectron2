@@ -77,7 +77,7 @@ class StandardPoseRPNHead(nn.Module):
         bbox_reg = []
         centerness = []
         for l, feature in enumerate(x):
-            if self.tower is None:
+            if self.tower is not None:
                 tower = self.tower(feature)
             else:
                 tower = feature

@@ -8,13 +8,13 @@ MODEL:
   PROPOSAL_GENERATOR:
     NAME: "PoseRPN"
   RESNETS:
-    OUT_FEATURES: ["res3", "res4", "res5"]
+    OUT_FEATURES: ["res2", "res3", "res4", "res5"]
   FPN:
-    IN_FEATURES: ["res3", "res4", "res5"]
+    IN_FEATURES: ["res2", "res3", "res4", "res5"]
   RPN:
     IN_FEATURES: ["p3", "p4", "p5", "p6", "p7"]
     HEAD_NAME: "StandardPoseRPNHead"
   ROI_HEADS:
-    IN_FEATURES: ["p3", "p4", "p5", "p6", "p7"]
+    IN_FEATURES: ["p2", "p3", "p4", "p5"]
   ROI_KEYPOINT_HEAD:
     NAME: "KRCNNConvDeconvUpsampleHead"
