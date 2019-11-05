@@ -1,10 +1,20 @@
 import torch
 
 from detectron2.structures import Boxes, Instances
+from detectron2.layers import batched_nms
 
-from .bounding_box import BoxList
-from .boxlist_ops import cat_boxlist, boxlist_ml_nms, remove_small_boxes
 
+def remove_small_objs(instances: Instances, min_size):
+    """
+    Only keep boxes with both sides >= min_size
+
+    Arguments:
+        boxlist (Boxlist)
+        min_size (int)
+    """
+    # TODO maybe add an API for querying the ws / hs
+    keep = instances.proposal_boxes.nonempty(min_size)
+    return instances[keep]
 
 class FCOSPostProcessor(torch.nn.Module):
     """
@@ -98,12 +108,15 @@ class FCOSPostProcessor(torch.nn.Module):
             ], dim=1)
 
             h, w = image_sizes[i]
-            boxlist = BoxList(detections, (int(w), int(h)), mode="xyxy")
-            boxlist.add_field("labels", per_class)
-            boxlist.add_field("scores", torch.sqrt(per_box_cls))
-            boxlist = boxlist.clip_to_image(remove_empty=False)
-            boxlist = remove_small_boxes(boxlist, self.min_size)
-            results.append(boxlist)
+            result = Instances(image_sizes[i])
+            result.proposal_boxes = Boxes(detections)
+            result.proposal_boxes.clip(image_sizes[i])
+            result.objectness_logits = torch.sqrt(per_box_cls)
+            result.labels = per_class
+            # Remove small instances
+            keep = result.proposal_boxes.nonempty(self.min_size)
+            result = result[keep]
+            results.append(result)
 
         return results
 
@@ -118,45 +131,33 @@ class FCOSPostProcessor(torch.nn.Module):
             boxlists (list[BoxList]): the post-processed anchors, after
                 applying box decoding and NMS
         """
-        sampled_boxes = []
+        sampled_instances = []
         for _, (l, o, b, c) in enumerate(zip(locations, box_cls, box_regression, centerness)):
-            sampled_boxes.append(
+            sampled_instances.append(
                 self.forward_for_single_feature_map(
                     l, o, b, c, image_sizes
                 )
             )
 
-        boxlists = list(zip(*sampled_boxes))
-        boxlists = [cat_boxlist(boxlist) for boxlist in boxlists]
+        instances = list(zip(*sampled_instances))
+        instances = [Instances.cat(instance) for instance in instances]
         if not self.bbox_aug_enabled:
-            results = self.select_over_all_levels(boxlists, image_sizes)
+            return self.select_over_all_levels(instances, image_sizes)
         else:
-            num_images = len(boxlists)
-            results = []
-            for i in range(num_images):
-                # multiclass nms
-                result = Instances(image_sizes[i])
-                boxes = boxlists[i]
-                cls_scores = boxes.get_field("scores")
-                result.proposal_boxes = Boxes(boxes.bbox)
-                result.objectness_logits = cls_scores
-                results.append(result)
-
-        return results
+            return [result.remove("labels") for result in instances]
 
     # TODO very similar to filter_results from PostProcessor
     # but filter_results is per image
     # TODO Yang: solve this issue in the future. No good solution
     # right now.
-    def select_over_all_levels(self, boxlists, image_sizes):
-        num_images = len(boxlists)
+    def select_over_all_levels(self, instances, image_sizes):
         results = []
-        for i in range(num_images):
+        for instance in instances:
             # multiclass nms
-            result = Instances(image_sizes[i])
-            boxes = boxlist_ml_nms(boxlists[i], self.nms_thresh)
-            cls_scores = boxes.get_field("scores")
-            number_of_detections = len(boxes)
+            keep = batched_nms(instance.proposal_boxes.tensor, instance.objectness_logits, instance.labels.float(), self.nms_thresh)
+            instance = instance[keep]
+            cls_scores = instance.objectness_logits
+            number_of_detections = len(cls_scores)
 
             # Limit to max_per_image detections **over all classes**
             if number_of_detections > self.fpn_post_nms_top_n > 0:
@@ -166,12 +167,9 @@ class FCOSPostProcessor(torch.nn.Module):
                 )
                 keep = cls_scores >= image_thresh.item()
                 keep = torch.nonzero(keep).squeeze(1)
-                result.proposal_boxes = Boxes(boxes[keep].bbox)
-                result.objectness_logits = cls_scores[keep]
-            else:
-                result.proposal_boxes = Boxes(boxes.bbox)
-                result.objectness_logits = cls_scores
-            results.append(result)
+                instance = instance[keep]
+            instance.remove("labels")
+            results.append(instance)
         return results
 
 
