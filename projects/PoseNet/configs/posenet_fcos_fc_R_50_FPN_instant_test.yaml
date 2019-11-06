@@ -1,4 +1,4 @@
-_BASE_: "posenet_kpfc_fcos_R_50_FPN_1x.yaml"
+_BASE_: "posenet_fcos_fc_R_50_FPN_1x.yaml"
 MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   RPN:

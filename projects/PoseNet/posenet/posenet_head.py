@@ -46,7 +46,7 @@ if new_method:
         pred_keypoint_logits[:, :, [0, 1]] = pred_keypoint_logits[:, :, [0, 1]] * gt_keypoints[:, :, 2].unsqueeze(2).repeat(1, 1, 2)
         confiden_loss = F.binary_cross_entropy_with_logits(pred_keypoint_logits[:, :, 2], gt_keypoints[:, :, 2], reduction="sum")
         keypoint_loss = F.smooth_l1_loss(pred_keypoint_logits[:, :, [0, 1]], gt_keypoints[:, :, [0, 1]], reduction="sum")
-        keypoint_loss = keypoint_loss * 3 + confiden_loss
+        keypoint_loss = keypoint_loss + confiden_loss
         # If a normalizer isn't specified, normalize by the number of visible keypoints in the minibatch
         if normalizer is None:
             normalizer = gt_keypoints[:, :, 2].sum()

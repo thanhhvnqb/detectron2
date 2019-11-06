@@ -7,7 +7,7 @@ import torch
 import numpy as np
 
 from detectron2.structures import Instances
-from detectron2.modeling import ROI_HEADS_REGISTRY, ROIHeads, build_keypoint_head
+from detectron2.modeling import ROI_HEADS_REGISTRY, ROIHeads, build_keypoint_head, build_box_head
 from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputLayers, FastRCNNOutputs
 from detectron2.modeling.poolers import ROIPooler
 from detectron2.layers import ShapeSpec
@@ -93,7 +93,7 @@ def select_proposals_with_visible_keypoints(proposals):
     return ret
 
 @ROI_HEADS_REGISTRY.register()
-class PoseROIHeads(ROIHeads):
+class FCOSROIHeads(ROIHeads):
     """
     It's "standard" in a sense that there is no ROI transform sharing
     or feature sharing between tasks.
@@ -106,7 +106,7 @@ class PoseROIHeads(ROIHeads):
     """
 
     def __init__(self, cfg, input_shape):
-        super(PoseROIHeads, self).__init__(cfg, input_shape)
+        super(FCOSROIHeads, self).__init__(cfg, input_shape)
         self._init_keypoint_head(cfg)
 
     def _init_keypoint_head(self, cfg):
@@ -213,7 +213,7 @@ class PoseROIHeads(ROIHeads):
 
 
 @ROI_HEADS_REGISTRY.register()
-class D2ROIHeads(ROIHeads):
+class FasterRCNNROIHeads(ROIHeads):
     """
     It's "standard" in a sense that there is no ROI transform sharing
     or feature sharing between tasks.
@@ -226,7 +226,7 @@ class D2ROIHeads(ROIHeads):
     """
 
     def __init__(self, cfg, input_shape):
-        super(D2ROIHeads, self).__init__(cfg, input_shape)
+        super(FasterRCNNROIHeads, self).__init__(cfg, input_shape)
         self._init_box_head(cfg)
         self._init_keypoint_head(cfg)
 
@@ -254,6 +254,9 @@ class D2ROIHeads(ROIHeads):
         # Here we split "box head" and "box predictor", which is mainly due to historical reasons.
         # They are used together so the "box predictor" layers should be part of the "box head".
         # New subclasses of ROIHeads do not need "box predictor"s.
+        self.box_head = build_box_head(
+            cfg, ShapeSpec(channels=in_channels, height=pooler_resolution, width=pooler_resolution)
+        )
         self.box_predictor = FastRCNNOutputLayers(
             self.box_head.output_size, self.num_classes, self.cls_agnostic_bbox_reg
         )
@@ -298,7 +301,6 @@ class D2ROIHeads(ROIHeads):
             losses = self._forward_box(features_list, proposals)
             # During training the proposals used by the box head are
             # used by the mask, keypoint (and densepose) heads.
-            losses.update(self._forward_mask(features_list, proposals))
             losses.update(self._forward_keypoint(features_list, proposals))
             return proposals, losses
         else:

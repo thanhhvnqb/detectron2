@@ -9,13 +9,13 @@
 # netname='kprcnn_fcos'
 # netname='kprcnn_mod'
 # netname='kprcnn_mod_fcos'
-# netname='posenet'
+# netname='posenet_fcos_conv'
 # netname='posenet_fcos_fc'
 netname='posenet_rcnn_fc'
 run_date=$(date +%Y%m%d)
 # run_date=201910930
-test_conf=instant_test
-# test_conf=1x
+# test_conf=instant_test
+test_conf=1x
 outdir=../../out/$netname/$run_date/
 outlog=../../out/run_${run_date}_$netname.log
 if [ "$netname" = 'kprcnn_fcos' ];
@@ -27,15 +27,15 @@ then
 elif [ "$netname" = 'kprcnn_mod_fcos' ];
 then
     configfile=configs/kprcnn_mod_R_50_fcos_FPN_$test_conf.yaml
-elif [ "$netname" = 'posenet' ];
+elif [ "$netname" = 'posenet_fcos_conv' ];
 then
-    configfile=configs/posenet_R_50_FPN_$test_conf.yaml
+    configfile=configs/posenet_fcos_conv_R_50_FPN_$test_conf.yaml
 elif [ "$netname" = 'posenet_fcos_fc' ];
 then
-    configfile=configs/posenet_kpfc_fcos_R_50_FPN_$test_conf.yaml
+    configfile=configs/posenet_fcos_fc_R_50_FPN_$test_conf.yaml
 elif [ "$netname" = 'posenet_rcnn_fc' ];
 then
-    configfile=configs/posenet_kpfc_rcnn_R_50_FPN_$test_conf.yaml
+    configfile=configs/posenet_rcnn_fc_R_50_FPN_$test_conf.yaml
 fi
 
 if test -f "$outlog"; then

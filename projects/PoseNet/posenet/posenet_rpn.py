@@ -62,7 +62,8 @@ class StandardPoseRPNHead(nn.Module):
         for modules in [self.tower, self.cls_logits, self.bbox_pred, self.centerness]:
             for l in modules.modules():
                 if isinstance(l, nn.Conv2d):
-                    torch.nn.init.normal_(l.weight, std=0.01)
+                    # torch.nn.init.normal_(l.weight, std=0.01)
+                    torch.nn.init.kaiming_normal_(l.weight, mode="fan_out", nonlinearity="relu")
                     torch.nn.init.constant_(l.bias, 0)
 
         # initialize the bias for focal loss
@@ -139,9 +140,11 @@ class PoseRPN(nn.Module):
         locations = self.compute_locations(features)
 
         if self.training:
+            self.box_selector_test.fpn_post_nms_top_n = 1000
             loss_box_cls, loss_box_reg, loss_centerness = self.loss_evaluator(locations, box_cls, box_regression, centerness, gt_boxes, gt_classes)
             losses = {"loss_rpn_cls": loss_box_cls, "loss_rpn_reg": loss_box_reg, "loss_centerness": loss_centerness}
         else:
+            self.box_selector_test.fpn_post_nms_top_n = 100
             losses = {}
         boxes = self.box_selector_test(locations, box_cls, box_regression, centerness, images.image_sizes)
         return boxes, losses

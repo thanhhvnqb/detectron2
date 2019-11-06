@@ -6,15 +6,25 @@ MODEL:
   BACKBONE:
     NAME: "build_fcos_resnet_fpn_backbone"
   PROPOSAL_GENERATOR:
-    NAME: "PoseRPN"
+    NAME: "RPN"
   RESNETS:
     OUT_FEATURES: ["res2", "res3", "res4", "res5"]
   FPN:
     IN_FEATURES: ["res2", "res3", "res4", "res5"]
   RPN:
     IN_FEATURES: ["p3", "p4", "p5", "p6", "p7"]
-    HEAD_NAME: "StandardPoseRPNHead"
   ROI_HEADS:
+    NAME: "FasterRCNNROIHeads"
     IN_FEATURES: ["p2", "p3", "p4", "p5"]
+    NUM_CLASSES: 1
+  ROI_BOX_HEAD:
+    NAME: "FastRCNNConvFCHead"
+    NUM_FC: 2
+    POOLER_RESOLUTION: 7
   ROI_KEYPOINT_HEAD:
-    NAME: "KRCNNConvDeconvUpsampleHead"
+    NAME: "PoseConvHead"
+    POOLER_RESOLUTION: 7
+    CONV_DIMS: (256, 256, 256, 256, 256, 256, 256, 256)
+    LOSS_WEIGHT: 2.0
+SOLVER:
+  BASE_LR: 0.01
