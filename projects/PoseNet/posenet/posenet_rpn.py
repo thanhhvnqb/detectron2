@@ -114,6 +114,10 @@ class PoseRPN(nn.Module):
         self.box_selector_test = box_selector_test
         self.loss_evaluator = loss_evaluator
         self.fpn_strides = cfg.MODEL.POSENET_RPN.FPN_STRIDES
+        self.pre_nms_top_n_train = cfg.MODEL.POSENET_RPN.PRE_NMS_TOP_N_TRAIN
+        self.post_nms_top_n_train = cfg.MODEL.POSENET_RPN.POST_NMS_TOP_N_TRAIN
+        self.pre_nms_top_n_test = cfg.MODEL.POSENET_RPN.PRE_NMS_TOP_N_TEST
+        self.post_nms_top_n_test = cfg.MODEL.POSENET_RPN.POST_NMS_TOP_N_TEST
 
     def forward(self, images, features, gt_instances=None):
         """
@@ -140,11 +144,13 @@ class PoseRPN(nn.Module):
         locations = self.compute_locations(features)
 
         if self.training:
-            self.box_selector_test.fpn_post_nms_top_n = 1000
+            self.box_selector_test.pre_nms_top_n = self.pre_nms_top_n_train
+            self.box_selector_test.fpn_post_nms_top_n = self.post_nms_top_n_train
             loss_box_cls, loss_box_reg, loss_centerness = self.loss_evaluator(locations, box_cls, box_regression, centerness, gt_boxes, gt_classes)
             losses = {"loss_rpn_cls": loss_box_cls, "loss_rpn_reg": loss_box_reg, "loss_centerness": loss_centerness}
         else:
-            self.box_selector_test.fpn_post_nms_top_n = 100
+            self.box_selector_test.pre_nms_top_n = self.pre_nms_top_n_test
+            self.box_selector_test.fpn_post_nms_top_n = self.post_nms_top_n_test
             losses = {}
         boxes = self.box_selector_test(locations, box_cls, box_regression, centerness, images.image_sizes)
         return boxes, losses

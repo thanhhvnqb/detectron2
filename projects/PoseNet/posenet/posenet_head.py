@@ -13,7 +13,7 @@ from detectron2.utils.registry import Registry
 
 logger = logging.getLogger(__name__)
 _TOTAL_SKIPPED = 0
-new_method = True
+new_method = False
 if new_method:
 
     def keypoint_rcnn_loss(pred_keypoint_logits, instances, normalizer):

@@ -175,9 +175,9 @@ class FCOSPostProcessor(torch.nn.Module):
 
 def make_fcos_postprocessor(config):
     pre_nms_thresh = config.MODEL.POSENET_RPN.INFERENCE_TH
-    pre_nms_top_n = config.MODEL.POSENET_RPN.PRE_NMS_TOP_N
+    pre_nms_top_n = config.MODEL.POSENET_RPN.PRE_NMS_TOP_N_TEST
     nms_thresh = config.MODEL.POSENET_RPN.NMS_TH
-    fpn_post_nms_top_n = config.MODEL.POSENET_RPN.POST_NMS_TOP_N
+    fpn_post_nms_top_n = config.MODEL.POSENET_RPN.POST_NMS_TOP_N_TEST
     bbox_aug_enabled = config.TEST.BBOX_AUG.ENABLED
 
     box_selector = FCOSPostProcessor(

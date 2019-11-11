@@ -15,13 +15,13 @@ MODEL:
     IN_FEATURES: ["p3", "p4", "p5", "p6", "p7"]
     HEAD_NAME: "StandardPoseRPNHead"
   ROI_HEADS:
-    NAME: "PoseROIHeads"
+    NAME: "FCOSROIHeads"
     IN_FEATURES: ["p2", "p3", "p4", "p5"]
     NUM_CLASSES: 1
   ROI_KEYPOINT_HEAD:
     NAME: "PoseConvHead"
     POOLER_RESOLUTION: 7
     CONV_DIMS: (256, 256, 256, 256, 256, 256, 256, 256)
-    LOSS_WEIGHT: 3.0
+    LOSS_WEIGHT: 1.0
 SOLVER:
-  BASE_LR: 0.01
+  BASE_LR: 0.00125

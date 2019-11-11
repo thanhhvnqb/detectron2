@@ -14,10 +14,19 @@ MODEL:
   RPN:
     IN_FEATURES: ["p3", "p4", "p5", "p6", "p7"]
     HEAD_NAME: "StandardPoseRPNHead"
+  POSENET_RPN:
+    PRE_NMS_TOP_N_TRAIN: 10000
+    PRE_NMS_TOP_N_TEST: 5000
+    POST_NMS_TOP_N_TRAIN: 1500
+    POST_NMS_TOP_N_TEST: 100
   ROI_HEADS:
-    IN_FEATURES: ["p2", "p3", "p4", "p5"]
+    NAME: "FCOSROIHeads"
+    IN_FEATURES: ["p2"]
+    NUM_CLASSES: 1
   ROI_KEYPOINT_HEAD:
-    NAME: "KRCNNConvDeconvUpsampleHead"
+    NAME: "PoseConvHead"
     POOLER_RESOLUTION: 14
     CONV_DIMS: (512, 512, 512, 512, 512, 512, 512, 512)
     LOSS_WEIGHT: 1.0
+SOLVER:
+  BASE_LR: 0.004
