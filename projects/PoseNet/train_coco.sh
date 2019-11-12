@@ -9,15 +9,15 @@
 # netname='kprcnn_fcos'
 # netname='kprcnn_mod'
 # netname='kprcnn_mod_fcos'
-# netname='posenet_fcos_conv'
+netname='posenet_fcos_conv'
 # netname='posenet_fcos_fc'
-netname='posenet_rcnn_fc'
+# netname='posenet_rcnn_fc'
 run_date=$(date +%Y%m%d)
 # run_date=201910930
 # test_conf=instant_test
 test_conf=1x
-outdir=../../out/$netname/$run_date/
-outlog=../../out/run_${run_date}_$netname.log
+outdir=out/$netname/$run_date/
+outlog=out/run_${run_date}_$netname.log
 if [ "$netname" = 'kprcnn_fcos' ];
 then
     configfile=configs/kprcnn_R_50_fcos_FPN_$test_conf.yaml

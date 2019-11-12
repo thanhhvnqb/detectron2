@@ -13,8 +13,8 @@ netname='kprcnn_fcos'
 # netname='posenet_rcnn_fc'
 run_date=20191102
 test_conf=test
-outdir=../../out/$netname/$run_date/
-outlog=../../out/run_test_${run_date}_$netname.log
+outdir=out/$netname/$run_date/
+outlog=out/run_test_${run_date}_$netname.log
 if [ "$netname" = 'kprcnn' ];
 then
     configfile=configs/kprcnn_R_50_FPN_$test_conf.yaml
