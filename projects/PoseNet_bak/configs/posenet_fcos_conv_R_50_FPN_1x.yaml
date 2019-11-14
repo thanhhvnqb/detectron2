@@ -1,0 +1,34 @@
+_BASE_: "Base-PoseNet-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  RESNETS:
+    DEPTH: 50
+  BACKBONE:
+    NAME: "build_fcos_resnet_fpn_backbone"
+  PROPOSAL_GENERATOR:
+    NAME: "PoseRPN"
+  RESNETS:
+    OUT_FEATURES: ["res3", "res4", "res5"]
+  FPN:
+    IN_FEATURES: ["res3", "res4", "res5"]
+  RPN:
+    IN_FEATURES: ["p3", "p4", "p5", "p6", "p7"]
+    HEAD_NAME: "StandardPoseRPNHead"
+  POSENET_RPN:
+    PRE_NMS_TOP_N_TRAIN: 10000
+    PRE_NMS_TOP_N_TEST: 5000
+    POST_NMS_TOP_N_TRAIN: 200
+    POST_NMS_TOP_N_TEST: 100
+    NUM_CONVS: 1
+  ROI_HEADS:
+    NAME: "FCOSROIHeads"
+    IN_FEATURES: ["p3"]
+    NUM_CLASSES: 1
+  ROI_KEYPOINT_HEAD:
+    NAME: "PoseConvHead"
+    POOLER_RESOLUTION: 14
+    CONV_DIMS: (512, 512, 512, 512, 512, 512, 512, 512)
+    LOSS_WEIGHT: 1.0
+SOLVER:
+  BASE_LR: 0.003
+#   WARMUP_METHOD: constant

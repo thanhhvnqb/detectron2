@@ -1,0 +1,26 @@
+_BASE_: "kprcnn_R_50_fcos_FPN_1x.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  BACKBONE:
+    NAME: "build_fcos_resnet_fpn_backbone"
+  RPN:
+    BATCH_SIZE_PER_IMAGE: 64
+  ROI_KEYPOINT_HEAD:
+    CONV_DIMS: [128, 128, 128, 128]
+DATASETS:
+  TRAIN: ("keypoints_coco_2017_val_100",)
+  TEST: ("keypoints_coco_2017_val_100",)
+SOLVER:
+  BASE_LR: 0.005
+  STEPS: (6000, 8000,)
+  MAX_ITER: 9000
+  IMS_PER_BATCH: 2
+  WARMUP_FACTOR: 0.01
+  WARMUP_ITERS: 100
+DATALOADER:
+  NUM_WORKERS: 2
+INPUT:
+  MAX_SIZE_TEST: 1333
+  MAX_SIZE_TRAIN: 1333
+  MIN_SIZE_TEST: 128
+  MIN_SIZE_TRAIN: (128,)

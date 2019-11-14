@@ -1,0 +1,28 @@
+_BASE_: "posenet_rcnn_fc_R_50_FPN_1x.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  RPN:
+    BATCH_SIZE_PER_IMAGE: 64
+  ROI_KEYPOINT_HEAD:
+    CONV_DIMS: [128, 128, 128, 128]
+DATASETS:
+  TRAIN: ("keypoints_coco_2017_val_100",)
+  TEST: ("keypoints_coco_2017_val_100",)
+SOLVER:
+  BASE_LR: 0.00125
+  STEPS: (6000, 8000,)
+  MAX_ITER: 9000
+  WARMUP_ITERS: 100
+  # STEPS: (3, 4,)
+  # MAX_ITER: 5
+  # WARMUP_ITERS: 5
+  WARMUP_FACTOR: 0.01
+  IMS_PER_BATCH: 16
+  WARMUP_METHOD: "constant"
+DATALOADER:
+  NUM_WORKERS: 2
+INPUT:
+  MAX_SIZE_TEST: 1333
+  MAX_SIZE_TRAIN: 1333
+  MIN_SIZE_TEST: 128
+  MIN_SIZE_TRAIN: (128,)
