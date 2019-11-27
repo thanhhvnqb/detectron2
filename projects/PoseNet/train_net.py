@@ -1,4 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 """
 PoseNet Training Script.
 
@@ -9,6 +8,9 @@ import os
 import itertools
 import json
 import copy
+import time
+
+import torch
 
 from fvcore.common.file_io import PathManager
 import detectron2.utils.comm as comm
@@ -20,6 +22,7 @@ from detectron2.data.datasets.register_coco import register_coco_instances
 from detectron2.data.datasets.builtin_meta import _get_builtin_metadata
 from detectron2.utils.logger import setup_logger
 
+from posenet import DevDetectionCheckpointer
 from posenet import add_posenet_config
 
 COCODEV = {}
@@ -33,6 +36,15 @@ COCODEV["coco"] = {
         "coco/annotations/image_info_test2017.json",
     ),
 }
+
+# NOTE: for train custom backbone need to add 'find_unused_parameters=True' to file 'detectron2.engine.defaults', at line
+# model = DistributedDataParallel(
+#     model, device_ids=[comm.get_local_rank()], broadcast_buffers=False, find_unused_parameters=True
+# )
+
+# For modify period print. file: detectron.engine.hooks
+# class PeriodicWriter(HookBase):
+#     def __init__(self, writers, period=20):
 
 class COCODevEvaluator(COCOEvaluator):
     def _eval_predictions(self, tasks):
@@ -67,6 +79,19 @@ class COCODevEvaluator(COCOEvaluator):
                 f.flush()
 
 class Trainer(DefaultTrainer):
+
+    def __init__(self, cfg, own_backbone=True):
+        super().__init__(cfg)
+        if own_backbone:
+            self.checkpointer = DevDetectionCheckpointer(
+                # Assume you want to save checkpoints together with logs/statistics
+                self.model,
+                cfg.OUTPUT_DIR,
+                optimizer=self.optimizer,
+                scheduler=self.scheduler,
+            )
+        self.grad_clip = cfg.SOLVER.GRAD_CLIP
+
     @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
         if output_folder is None:
@@ -74,6 +99,45 @@ class Trainer(DefaultTrainer):
         if dataset_name in COCODEV["coco"].keys():
             return COCODevEvaluator(dataset_name, cfg, True, output_folder)
         return COCOEvaluator(dataset_name, cfg, True, output_folder)
+
+
+    def run_step(self):
+        """
+        Implement the standard training logic described above.
+        """
+        assert self.model.training, "[SimpleTrainer] model was changed to eval mode!"
+        start = time.perf_counter()
+        """
+        If your want to do something with the data, you can wrap the dataloader.
+        """
+        data = next(self._data_loader_iter)
+        data_time = time.perf_counter() - start
+
+        """
+        If your want to do something with the losses, you can wrap the model.
+        """
+        loss_dict = self.model(data)
+        losses = sum(loss for loss in loss_dict.values())
+        self._detect_anomaly(losses, loss_dict)
+
+        metrics_dict = loss_dict
+        metrics_dict["data_time"] = data_time
+        self._write_metrics(metrics_dict)
+
+        """
+        If you need accumulate gradients or something similar, you can
+        wrap the optimizer with your custom `zero_grad()` method.
+        """
+        self.optimizer.zero_grad()
+        losses.backward()
+        if self.grad_clip > 0:
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
+        """
+        If you need gradient clipping/scaling or other processing, you can
+        wrap the optimizer with your custom `step()` method.
+        """
+        self.optimizer.step()
+
 
 def register_cocodev(root="datasets"):
     for dataset_name, splits_per_dataset in COCODEV.items():

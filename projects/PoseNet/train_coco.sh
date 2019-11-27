@@ -6,17 +6,21 @@
 # ln -s $Dataset/test2017 datasets/coco/test2017
 # ln -s $Dataset/val2017 datasets/coco/val2017
 
-netname='kprcnn_fcos'
+# netname='kprcnn_fcos'
+netname='litepose_mb3'
 # netname='posenet_fcos_conv'
-run_date=$(date +%Y%m%d)
+run_date=$(date +%Y%m%dT%H)
 # run_date=201910930
-# test_conf=instant_test
-test_conf=1x
+test_conf=instant_test
+# test_conf=1x
 outdir=out/$netname/$run_date/
 outlog=out/run_${run_date}_$netname.log
 if [ "$netname" = 'kprcnn_fcos' ];
 then
     configfile=configs/kprcnn_R_50_fcos_FPN_$test_conf.yaml
+elif [ "$netname" = 'litepose_mb3' ];
+then
+    configfile=configs/litepose_MB3_FPN_$test_conf.yaml
 elif [ "$netname" = 'posenet_fcos_conv' ];
 then
     configfile=configs/posenet_fcos_conv_R_50_FPN_$test_conf.yaml
@@ -25,5 +29,5 @@ fi
 if test -f "$outlog"; then
     rm $outlog
 fi
-python train_net.py --num-gpus 2 --config-file $configfile OUTPUT_DIR $outdir 2>&1 | tee -a $outlog
+python train_net.py --num-gpus 2 --resume --config-file $configfile OUTPUT_DIR $outdir 2>&1 | tee -a $outlog
 

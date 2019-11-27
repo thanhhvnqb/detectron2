@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) ISLab, University of Ulsan. All Rights Reserved
-# File:
 import logging
 
 import torch

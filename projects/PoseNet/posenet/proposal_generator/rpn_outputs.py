@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import itertools
 import logging
 import numpy as np
@@ -8,6 +9,7 @@ from fvcore.nn import smooth_l1_loss
 from detectron2.layers import batched_nms, cat
 from detectron2.structures import Boxes, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
+
 from detectron2.modeling.sampling import subsample_labels
 
 logger = logging.getLogger(__name__)
