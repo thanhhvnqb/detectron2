@@ -138,7 +138,7 @@ class LitePoseDWConvDeconvUpsampleHead(nn.Module):
         for layer_channel in conv_dims:
             conv_fcn.append(Conv2d(in_channels, layer_channel, kernel_size=1, bias=not norm,\
                                norm=get_norm(norm, layer_channel), activation=F.relu))
-            conv_fcn.append(Conv2d(layer_channel, layer_channel, kernel_size=3, padding=1, bias=not norm,\
+            conv_fcn.append(Conv2d(layer_channel, layer_channel, kernel_size=5, padding=2, bias=not norm,\
                                groups=layer_channel, norm=get_norm(norm, layer_channel), activation=F.relu))
             in_channels = layer_channel
         self.add_module('conv_fcn', nn.Sequential(*conv_fcn))

@@ -7,16 +7,16 @@ MODEL:
   MOBILENETV3:
     OUT_FEATURES: ["res3", "res4", "res5"]
   ANCHOR_GENERATOR:
-    SIZES: [[32], [64], [128], [256], [512]]  # One size for each in feature map
+    SIZES: [[32], [64], [128], [256]]  # One size for each in feature map
     ASPECT_RATIOS: [[0.5, 1.0, 2.0]]  # Three aspect ratios (same for all in feature maps)
   FPN:
     IN_FEATURES: ["res3", "res4", "res5"]
-    OUT_CHANNELS: 128
+    OUT_CHANNELS: 256
   PROPOSAL_GENERATOR:
     NAME: "RPN"
   RPN:
-    # HEAD_NAME: "LiteRPNHeadDW"
-    IN_FEATURES: ["p3", "p4", "p5", "p6", "p7"]
+    HEAD_NAME: "LiteRPNHeadDW"
+    IN_FEATURES: ["p3", "p4", "p5", "p6"]
     PRE_NMS_TOPK_TRAIN: 2000  # Per FPN level
     PRE_NMS_TOPK_TEST: 1000  # Per FPN level
     # Detectron1 uses 2000 proposals per-batch,
@@ -37,8 +37,8 @@ MODEL:
     NUM_CONV: 0
     NUM_FC: 2
     POOLER_RESOLUTION: 7
-    CONV_DIM: 128
-    FC_DIM: 960
+    CONV_DIM: 256
+    FC_DIM: 1024
   ROI_KEYPOINT_HEAD:
     # NAME: "KRCNNConvDeconvUpsampleHead"
     NAME: "LitePoseDWConvDeconvUpsampleHead"
@@ -54,4 +54,10 @@ SOLVER:
   MAX_ITER: 90000
   GRAD_CLIP: 10
 INPUT:
-  MIN_SIZE_TRAIN: (640, 672, 704, 736, 768, 800)
+  CROP:
+    ENABLED: True
+    SIZE: [0.9, 0.9]
+  MAX_SIZE_TEST: 1333
+  MAX_SIZE_TRAIN: 1333
+  MIN_SIZE_TEST: 320
+  MIN_SIZE_TRAIN: (256, 320, 384)

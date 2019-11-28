@@ -45,12 +45,12 @@ class LiteRPNHeadDW(nn.Module):
         # 3x3 conv for the hidden representation
         expand_channels = dwexpand_factor * in_channels
         conv = []
-        conv.append(Conv2d(in_channels, expand_channels, kernel_size=1, bias=not norm,\
-                           norm=get_norm(norm, expand_channels), activation=F.relu))
-        conv.append(Conv2d(expand_channels, expand_channels, kernel_size=3, padding=1, groups=expand_channels,\
-                           bias=not norm, norm=get_norm(norm, expand_channels), activation=F.relu))
+        conv.append(Conv2d(in_channels, in_channels, kernel_size=5, padding=2, groups=in_channels,\
+                           bias=not norm, norm=get_norm(norm, in_channels), activation=F.relu))
+        conv.append(Conv2d(in_channels, in_channels, kernel_size=1, bias=not norm,\
+                           norm=get_norm(norm, in_channels), activation=F.relu))
         self.add_module('conv', nn.Sequential(*conv))
-        in_channels = expand_channels
+        # in_channels = expand_channels
         # self.conv = nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
         # 1x1 conv for predicting objectness logits
         self.objectness_logits = nn.Conv2d(in_channels, num_cell_anchors, kernel_size=1, stride=1)
@@ -59,9 +59,10 @@ class LiteRPNHeadDW(nn.Module):
             in_channels, num_cell_anchors * box_dim, kernel_size=1, stride=1
         )
 
-        for l in [self.conv, self.objectness_logits, self.anchor_deltas]:
+        for l in [*self.conv, self.objectness_logits, self.anchor_deltas]:
             nn.init.normal_(l.weight, std=0.01)
-            nn.init.constant_(l.bias, 0)
+            if l.bias is not None:
+                nn.init.constant_(l.bias, 0)
 
     def forward(self, features):
         """

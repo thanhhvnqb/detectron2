@@ -20,14 +20,14 @@ class LastLevelP6P7DW(nn.Module):
         self.in_feature = "p5"
         norm = "GN"
         conv_fcn = []
-        conv_fcn.append(Conv2d(in_channels, in_channels, kernel_size=3, stride=2, padding=1, bias=not norm,\
-                            groups=out_channels, norm=get_norm(norm, in_channels), activation=F.relu))
-        conv_fcn.append(Conv2d(out_channels, out_channels, kernel_size=1, bias=not norm,\
+        conv_fcn.append(Conv2d(in_channels, in_channels, kernel_size=5, stride=2, padding=2, bias=not norm,\
+                            groups=in_channels, norm=get_norm(norm, in_channels), activation=F.relu))
+        conv_fcn.append(Conv2d(in_channels, out_channels, kernel_size=1, bias=not norm,\
                             norm=get_norm(norm, out_channels), activation=F.relu))
         self.add_module('p6', nn.Sequential(*conv_fcn))
 
         conv_fcn = []
-        conv_fcn.append(Conv2d(out_channels, out_channels, kernel_size=3, stride=2, padding=1, bias=not norm,\
+        conv_fcn.append(Conv2d(out_channels, out_channels, kernel_size=5, stride=2, padding=2, bias=not norm,\
                             groups=out_channels, norm=get_norm(norm, out_channels), activation=F.relu))
         conv_fcn.append(Conv2d(out_channels, out_channels, kernel_size=1, bias=not norm,\
                             norm=get_norm(norm, out_channels), activation=F.relu))
