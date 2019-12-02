@@ -20,14 +20,14 @@ class LastLevelP6P7DW(nn.Module):
         self.in_feature = "p5"
         norm = "GN"
         conv_fcn = []
-        conv_fcn.append(Conv2d(in_channels, in_channels, kernel_size=5, stride=2, padding=2, bias=not norm,\
+        conv_fcn.append(Conv2d(in_channels, in_channels, kernel_size=3, stride=2, padding=1, bias=not norm,\
                             groups=in_channels, norm=get_norm(norm, in_channels), activation=F.relu))
         conv_fcn.append(Conv2d(in_channels, out_channels, kernel_size=1, bias=not norm,\
                             norm=get_norm(norm, out_channels), activation=F.relu))
         self.add_module('p6', nn.Sequential(*conv_fcn))
 
         conv_fcn = []
-        conv_fcn.append(Conv2d(out_channels, out_channels, kernel_size=5, stride=2, padding=2, bias=not norm,\
+        conv_fcn.append(Conv2d(out_channels, out_channels, kernel_size=3, stride=2, padding=1, bias=not norm,\
                             groups=out_channels, norm=get_norm(norm, out_channels), activation=F.relu))
         conv_fcn.append(Conv2d(out_channels, out_channels, kernel_size=1, bias=not norm,\
                             norm=get_norm(norm, out_channels), activation=F.relu))
@@ -40,6 +40,28 @@ class LastLevelP6P7DW(nn.Module):
         p6 = self.p6(p5)
         p7 = self.p7(p6)
         return [p6, p7]
+
+class LastLevelP6DW(nn.Module):
+    """This module is used in FCOS to generate extra layers, P6 and P7 from P5 feature."""
+
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.num_levels = 1
+        self.in_feature = "p5"
+        norm = "GN"
+        conv_fcn = []
+        conv_fcn.append(Conv2d(in_channels, in_channels, kernel_size=5, stride=2, padding=2, bias=not norm,\
+                            groups=in_channels, norm=get_norm(norm, in_channels), activation=F.relu))
+        conv_fcn.append(Conv2d(in_channels, out_channels, kernel_size=1, bias=not norm,\
+                            norm=get_norm(norm, out_channels), activation=F.relu))
+        self.add_module('p6', nn.Sequential(*conv_fcn))
+
+        for layer in self.p6:
+            weight_init.c2_msra_fill(layer)
+
+    def forward(self, p5):
+        p6 = self.p6(p5)
+        return [p6]
 
 class LastLevelP6P7(nn.Module):
     """This module is used in FCOS to generate extra layers, P6 and P7 from P5 feature."""
@@ -98,7 +120,8 @@ def build_mb3_fpn_backbone(cfg, input_shape: ShapeSpec):
         in_features=in_features,
         out_channels=out_channels,
         norm=cfg.MODEL.FPN.NORM,
-        top_block=LastLevelP6P7DW(out_channels, out_channels),
+        top_block=LastLevelP6DW(out_channels, out_channels),
+        # top_block=LastLevelP6P7DW(out_channels, out_channels),
         fuse_type=cfg.MODEL.FPN.FUSE_TYPE,
     )
     return backbone

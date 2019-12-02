@@ -45,10 +45,10 @@ class LiteRPNHeadDW(nn.Module):
         # 3x3 conv for the hidden representation
         expand_channels = dwexpand_factor * in_channels
         conv = []
-        conv.append(Conv2d(in_channels, in_channels, kernel_size=5, padding=2, groups=in_channels,\
-                           bias=not norm, norm=get_norm(norm, in_channels), activation=F.relu))
         conv.append(Conv2d(in_channels, in_channels, kernel_size=1, bias=not norm,\
                            norm=get_norm(norm, in_channels), activation=F.relu))
+        conv.append(Conv2d(in_channels, in_channels, kernel_size=5, padding=2, groups=in_channels,\
+                           bias=not norm, norm=get_norm(norm, in_channels), activation=F.relu))
         self.add_module('conv', nn.Sequential(*conv))
         # in_channels = expand_channels
         # self.conv = nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
@@ -76,6 +76,72 @@ class LiteRPNHeadDW(nn.Module):
             pred_objectness_logits.append(self.objectness_logits(t))
             pred_anchor_deltas.append(self.anchor_deltas(t))
         return pred_objectness_logits, pred_anchor_deltas
+
+
+@RPN_HEAD_REGISTRY.register()
+class LiteRPNHeadEDW(nn.Module):
+    """
+    RPN classification and regression heads. Uses a 3x3 conv to produce a shared
+    hidden state from which one 1x1 conv predicts objectness logits for each anchor
+    and a second 1x1 conv predicts bounding-box deltas specifying how to deform
+    each anchor into an object proposal.
+    """
+
+    def __init__(self, cfg, input_shape: List[ShapeSpec]):
+        super().__init__()
+
+        # Standard RPN is shared across levels:
+        in_channels = [s.channels for s in input_shape]
+        assert len(set(in_channels)) == 1, "Each level must have the same channel!"
+        in_channels = in_channels[0]
+        dwexpand_factor = cfg.MODEL.RPN.DWEXPAND_FACTOR
+        norm = cfg.MODEL.RPN.NORM
+
+        # RPNHead should take the same input as anchor generator
+        # NOTE: it assumes that creating an anchor generator does not have unwanted side effect.
+        anchor_generator = build_anchor_generator(cfg, input_shape)
+        num_cell_anchors = anchor_generator.num_cell_anchors
+        box_dim = anchor_generator.box_dim
+        assert (
+            len(set(num_cell_anchors)) == 1
+        ), "Each level must have the same number of cell anchors"
+        num_cell_anchors = num_cell_anchors[0]
+
+        # 3x3 conv for the hidden representation
+        expand_channels = dwexpand_factor * in_channels
+        conv = []
+        conv.append(Conv2d(in_channels, expand_channels, kernel_size=1, bias=not norm,\
+                           norm=get_norm(norm, expand_channels), activation=F.relu))
+        conv.append(Conv2d(expand_channels, expand_channels, kernel_size=5, padding=2, groups=expand_channels,\
+                           bias=not norm, norm=get_norm(norm, expand_channels), activation=F.relu))
+        self.add_module('conv', nn.Sequential(*conv))
+        # in_channels = expand_channels
+        # self.conv = nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
+        # 1x1 conv for predicting objectness logits
+        self.objectness_logits = nn.Conv2d(in_channels, num_cell_anchors, kernel_size=1, stride=1)
+        # 1x1 conv for predicting box2box transform deltas
+        self.anchor_deltas = nn.Conv2d(
+            in_channels, num_cell_anchors * box_dim, kernel_size=1, stride=1
+        )
+
+        for l in [*self.conv, self.objectness_logits, self.anchor_deltas]:
+            nn.init.normal_(l.weight, std=0.01)
+            if l.bias is not None:
+                nn.init.constant_(l.bias, 0)
+
+    def forward(self, features):
+        """
+        Args:
+            features (list[Tensor]): list of feature maps
+        """
+        pred_objectness_logits = []
+        pred_anchor_deltas = []
+        for x in features:
+            t = self.conv(x)
+            pred_objectness_logits.append(self.objectness_logits(t))
+            pred_anchor_deltas.append(self.anchor_deltas(t))
+        return pred_objectness_logits, pred_anchor_deltas
+
 
 
 @PROPOSAL_GENERATOR_REGISTRY.register()

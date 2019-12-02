@@ -43,7 +43,7 @@ class LiteFastRCNNConvFCHead(nn.Module):
             for k in range(num_conv):
                 conv.append(Conv2d(in_channels, expand_channels, kernel_size=1, bias=not norm,\
                                 norm=get_norm(norm, expand_channels), activation=F.relu))
-                conv.append(Conv2d(expand_channels, expand_channels, kernel_size=5, padding=2, bias=not norm,\
+                conv.append(Conv2d(expand_channels, expand_channels, kernel_size=3, padding=1, bias=not norm,\
                                 groups=expand_channels, norm=get_norm(norm, expand_channels), activation=F.relu))
                 in_channels = expand_channels
             conv.append(Conv2d(expand_channels, conv_dim, kernel_size=1, bias=not norm,\

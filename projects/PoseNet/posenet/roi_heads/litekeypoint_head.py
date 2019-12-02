@@ -138,7 +138,7 @@ class LitePoseDWConvDeconvUpsampleHead(nn.Module):
         for layer_channel in conv_dims:
             conv_fcn.append(Conv2d(in_channels, layer_channel, kernel_size=1, bias=not norm,\
                                norm=get_norm(norm, layer_channel), activation=F.relu))
-            conv_fcn.append(Conv2d(layer_channel, layer_channel, kernel_size=5, padding=2, bias=not norm,\
+            conv_fcn.append(Conv2d(layer_channel, layer_channel, kernel_size=3, padding=1, bias=not norm,\
                                groups=layer_channel, norm=get_norm(norm, layer_channel), activation=F.relu))
             in_channels = layer_channel
         self.add_module('conv_fcn', nn.Sequential(*conv_fcn))
@@ -164,6 +164,84 @@ class LitePoseDWConvDeconvUpsampleHead(nn.Module):
 
     def forward(self, x):
         x = self.conv_fcn(x)
+        x = self.score_lowres(x)
+        x = interpolate(x, scale_factor=self.up_scale, mode="bilinear", align_corners=False)
+        return x
+
+class EDWConv(nn.Module):
+    def __init__(self, in_channels, expand_channel, layer_channel, norm=""):
+        super().__init__()
+        self.edwconv = Conv2d(in_channels, expand_channel, kernel_size=3, padding=1, bias=not norm,\
+                               groups=in_channels, norm=get_norm(norm, expand_channel), activation=F.relu)
+        self.reconv = Conv2d(expand_channel, layer_channel, kernel_size=1, bias=not norm,\
+                               norm=get_norm(norm, layer_channel), activation=None)
+        for layer in [self.edwconv, self.reconv]:
+                weight_init.c2_msra_fill(layer)
+            
+    def forward(self, x):
+        out = self.edwconv(x)
+        out = self.reconv(out)
+        return out + x
+
+@ROI_KEYPOINT_HEAD_REGISTRY.register()
+class LitePoseEDWConvDeconvUpsampleHead(nn.Module):
+    """
+    A standard keypoint head containing a series of 3x3 convs, followed by
+    a transpose convolution and bilinear interpolation for upsampling.
+    """
+
+    def __init__(self, cfg, input_shape: ShapeSpec):
+        """
+        The following attributes are parsed from config:
+            conv_dims: an iterable of output channel counts for each conv in the head
+                         e.g. (512, 512, 512) for three convs outputting 512 channels.
+            num_keypoints: number of keypoint heatmaps to predicts, determines the number of
+                           channels in the final output.
+        """
+        super().__init__()
+
+        # fmt: off
+        # default up_scale to 2 (this can eventually be moved to config)
+        up_scale        = 2
+        conv_dims       = cfg.MODEL.ROI_KEYPOINT_HEAD.CONV_DIMS
+        num_keypoints   = cfg.MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS
+        dwexpand_factor = cfg.MODEL.ROI_KEYPOINT_HEAD.DWEXPAND_FACTOR
+        norm            = cfg.MODEL.ROI_KEYPOINT_HEAD.NORM
+        in_channels     = input_shape.channels
+        # fmt: on
+        norm = ""
+        self.conv_fcns = []
+        for idx, layer_channel in enumerate(conv_dims):
+            expand_channel = in_channels * dwexpand_factor
+            conv_fcn = EDWConv(in_channels, expand_channel, layer_channel, norm)
+            in_channels = layer_channel
+            self.add_module("conv_fcn{}".format(idx + 1), conv_fcn)
+            self.conv_fcns.append(conv_fcn)
+
+        deconv_kernel = 4
+        self.score_lowres = ConvTranspose2d(
+            in_channels, num_keypoints, deconv_kernel, stride=2, padding=deconv_kernel // 2 - 1
+        )
+        self.up_scale = up_scale
+        for layer in [self.score_lowres]:
+            weight_init.c2_msra_fill(layer)
+        # for name, param in self.named_parameters():
+        #     if "bias" in name:
+        #         nn.init.constant_(param, 0)
+        #     elif "weight" in name:
+        #         print("init:", name)
+        #         if ".norm" in name:
+        #             weight_init.c2_msra_fill(param)
+        #         else:
+        #             # Caffe2 implementation uses MSRAFill, which in fact
+        #             # corresponds to kaiming_normal_ in PyTorch
+        #             nn.init.kaiming_normal_(param, mode="fan_out", nonlinearity="relu")
+
+    def forward(self, x):
+        for block in self.conv_fcns:
+            x = block(x)
+            x = F.relu(x)
+        # x = self.conv_fcn(x)
         x = self.score_lowres(x)
         x = interpolate(x, scale_factor=self.up_scale, mode="bilinear", align_corners=False)
         return x
